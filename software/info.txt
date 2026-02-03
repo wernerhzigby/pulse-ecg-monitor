@@ -1,0 +1,1 @@
+Use the given app to examin the downloaded report by selecting the downloaded folder with the app.

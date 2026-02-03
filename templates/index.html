@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P.U.L.S.E. ECG Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body>
+<header>
+    <div class="brand">
+        <h1>P.U.L.S.E.</h1>
+        <span>Portable Unit for Live Signal Electrocardiography</span>
+    </div>
+    <div class="actions">
+        <a class="button-link" href="/report">Download Report</a>
+        <button class="secondary" onclick="fetch('/reset',{method:'POST'})">Reset</button>
+        <button class="danger" onclick="fetch('/shutdown',{method:'POST'})">Shutdown</button>
+    </div>
+</header>
+
+<main>
+    <div class="dashboard">
+        <section class="card">
+            <div class="metrics">
+                <div class="metric">
+                    <div class="label">BPM</div>
+                    <div class="value" id="bpm">--</div>
+                    <div class="sub" id="bpm-note">Waiting for signal</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Mode</div>
+                    <div class="value" id="mode">--</div>
+                    <div class="sub" id="hardware">Hardware: --</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Status</div>
+                    <div class="value">
+                        <span class="status-pill"><span class="status-dot"></span><span id="status">Live</span></span>
+                    </div>
+                    <div class="sub" id="last-update">Last update: --</div>
+                </div>
+            </div>
+
+            <div id="ecgChart" style="height: 360px;"></div>
+            <div id="bpmChart" style="height: 170px; margin-top: 12px;"></div>
+        </section>
+
+        <aside class="card">
+            <h2>Active Events</h2>
+            <div id="events" class="event-list"></div>
+        </aside>
+    </div>
+</main>
+
+<script>
+let ecgTrace = {
+    y: [],
+    type: 'scatter',
+    mode: 'lines',
+    line: {color: '#43c6f9', width: 1}
+};
+
+let bpmTrace = {
+    y: [],
+    type: 'scatter',
+    mode: 'lines',
+    line: {color: '#ff5f56', width: 2}
+};
+
+Plotly.newPlot('ecgChart', [ecgTrace], {
+    margin: {t: 20, b: 30, r: 10, l: 40},
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    xaxis: {showgrid: false, zeroline: false, showticklabels: false},
+    yaxis: {showgrid: false, zeroline: false}
+});
+
+Plotly.newPlot('bpmChart', [bpmTrace], {
+    margin: {t: 20, b: 30, r: 10, l: 40},
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    xaxis: {showgrid: false, zeroline: false, showticklabels: false},
+    yaxis: {showgrid: false, zeroline: false}
+});
+
+function updateStatus() {
+    fetch('/health').then(r => r.json()).then(d => {
+        document.getElementById('mode').innerText = d.simulate ? 'Simulated' : 'Live';
+        document.getElementById('hardware').innerText = d.hardware ? 'Hardware: Ready' : 'Hardware: Missing';
+    }).catch(() => {
+        document.getElementById('status').innerText = 'Offline';
+    });
+}
+
+function update() {
+    fetch('/data').then(r => r.json()).then(d => {
+        document.getElementById('bpm').innerText = d.bpm || '--';
+        document.getElementById('bpm-note').innerText = d.bpm ? 'Live estimate' : 'Waiting for signal';
+        document.getElementById('last-update').innerText = `Last update: ${new Date().toLocaleTimeString()}`;
+
+        Plotly.update('ecgChart', {y: [d.ecg]}, {}, [0]);
+        Plotly.update('bpmChart', {y: [d.bpm_history]}, {}, [0]);
+
+        const ev = document.getElementById('events');
+        ev.innerHTML = '';
+        if (!d.events.length) {
+            const div = document.createElement('div');
+            div.className = 'event';
+            div.innerText = 'No active events.';
+            ev.appendChild(div);
+            return;
+        }
+
+        d.events.forEach(e => {
+            const div = document.createElement('div');
+            div.className = 'event';
+            if (e.includes('Ventricular') || e.includes('Asystole')) {
+                div.classList.add('danger');
+            } else if (e.includes('Tachycardia') || e.includes('Bradycardia')) {
+                div.classList.add('warn');
+            }
+            div.innerText = e;
+            ev.appendChild(div);
+        });
+    });
+}
+
+updateStatus();
+setInterval(update, 500);
+setInterval(updateStatus, 5000);
+</script>
+
+</body>
+</html>

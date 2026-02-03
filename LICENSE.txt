@@ -1,0 +1,24 @@
+# The Unlicense
+
+This is free and unencumbered software released into the public domain.
+
+## Everyone is permitted to:
+
+- Copy
+- Modify
+- Publish
+- Use
+- Compile
+- Sell
+- Distribute
+- Sublicense
+
+…for any purpose, commercial or non-commercial, and by any means.
+
+## No warranty
+
+This software is offered “as-is”, without any warranty of any kind, either expressed or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
+
+## Additional Information
+
+For more details, see [https://unlicense.org](https://unlicense.org)
